@@ -25,8 +25,14 @@ public class WhatsAppService {
 
     @PostConstruct
     public void init() {
-        Twilio.init(accountSid, authToken);
-        log.info("Twilio initialized");
+        if ("TWILIO_NOT_CONFIGURED".equals(accountSid) || "TWILIO_NOT_CONFIGURED".equals(authToken)) {
+            return;
+        }
+        try {
+            Twilio.init(accountSid, authToken);
+        } catch (Exception e) {
+            log.error("Twilio initialization failed: {}", e.getMessage());
+        }
     }
 
     public void sendWelcome(String toPhone, String name) {
@@ -51,20 +57,21 @@ public class WhatsAppService {
     }
 
     private void sendMessage(String toPhone, String text) {
+        if ("TWILIO_NOT_CONFIGURED".equals(accountSid) || "TWILIO_NOT_CONFIGURED".equals(authToken)) {
+            throw new RuntimeException("Twilio not configured");
+        }
+
         try {
             if (!toPhone.startsWith("+")) {
                 toPhone = "+94" + toPhone;
             }
 
-            Message message = Message.creator(
+            Message.creator(
                     new PhoneNumber("whatsapp:" + toPhone),
                     new PhoneNumber(fromNumber),
                     text
             ).create();
-
-            log.info("WhatsApp sent: {}", message.getSid());
         } catch (Exception e) {
-            log.error("WhatsApp failed: {}", e.getMessage());
             throw new RuntimeException("WhatsApp failed", e);
         }
     }

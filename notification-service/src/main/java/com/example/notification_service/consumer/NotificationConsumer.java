@@ -16,66 +16,132 @@ public class NotificationConsumer {
     private final WhatsAppService whatsAppService;
     private final EmailService emailService;
 
-    @KafkaListener(topics = "notifications", groupId = "notification-service-group")
+    @KafkaListener(
+            topics = "notifications",
+            groupId = "notification-service-group",
+            containerFactory = "kafkaListenerContainerFactory"
+    )
     public void consume(NotificationEvent event) {
-        log.info("Received: {} for {}", event.getEventType(), event.getRecipientName());
+
+        if (event == null) {
+            log.error("Received null event");
+            return;
+        }
 
         try {
             switch (event.getEventType()) {
-                case "WELCOME":
-                    sendWelcome(event);
-                    break;
-                case "PAYMENT_CONFIRMED":
-                    sendPayment(event);
-                    break;
-                default:
-                    log.warn("Unknown type: {}", event.getEventType());
+                case "WELCOME" -> sendWelcome(event);
+                case "PAYMENT_CONFIRMED" -> sendPayment(event);
+                default -> log.warn("Unknown event type: {}", event.getEventType());
             }
         } catch (Exception e) {
-            log.error("Failed: {}", e.getMessage());
+            log.error("Notification failed", e);
         }
     }
 
+    // Added helper methods to dispatch notifications based on priority and available recipients.
     private void sendWelcome(NotificationEvent event) {
-        if (event.getPriority() == 1) {
-            try {
-                whatsAppService.sendWelcome(
-                        event.getRecipientPhone(),
-                        event.getRecipientName()
-                );
-            } catch (Exception e) {
-                log.warn("WhatsApp failed, using email");
-                emailService.sendWelcome(
-                        event.getRecipientEmail(),
-                        event.getRecipientName()
-                );
+        if (event == null) return;
+
+        Integer priority = event.getPriority();
+        String phone = event.getRecipientPhone();
+        String email = event.getRecipientEmail();
+        String name = event.getRecipientName();
+
+        // priority: 1 = WhatsApp preferred, 2 = Email preferred. If null, try WhatsApp then Email.
+        if (priority != null && priority == 2) {
+            // Email preferred
+            if (email != null && !email.isBlank()) {
+                try {
+                    emailService.sendWelcome(email, name);
+                } catch (Exception e) {
+                    log.error("Failed to send welcome email to {}: {}", email, e.getMessage());
+                }
+            } else {
+                log.warn("No recipient email available for welcome event {}", event.getEventId());
+            }
+
+            // send WhatsApp as secondary if phone available
+            if (phone != null && !phone.isBlank()) {
+                try {
+                    whatsAppService.sendWelcome(phone, name);
+                } catch (Exception e) {
+                    log.error("Failed to send welcome WhatsApp to {}: {}", phone, e.getMessage());
+                }
             }
         } else {
-            emailService.sendWelcome(
-                    event.getRecipientEmail(),
-                    event.getRecipientName()
-            );
+            // WhatsApp preferred (priority == 1 or null)
+            if (phone != null && !phone.isBlank()) {
+                try {
+                    whatsAppService.sendWelcome(phone, name);
+                } catch (Exception e) {
+                    log.error("Failed to send welcome WhatsApp to {}: {}", phone, e.getMessage());
+                }
+            } else {
+                log.warn("No recipient phone available for welcome event {}", event.getEventId());
+            }
+
+            // send Email as secondary if email available
+            if (email != null && !email.isBlank()) {
+                try {
+                    emailService.sendWelcome(email, name);
+                } catch (Exception e) {
+                    log.error("Failed to send welcome email to {}: {}", email, e.getMessage());
+                }
+            }
         }
     }
 
     private void sendPayment(NotificationEvent event) {
-        if (event.getPriority() == 1) {
-            try {
-                whatsAppService.sendPaymentConfirmation(
-                        event.getRecipientPhone(),
-                        event.getTemplateData()
-                );
-            } catch (Exception e) {
-                emailService.sendPaymentConfirmation(
-                        event.getRecipientEmail(),
-                        event.getTemplateData()
-                );
+        if (event == null) return;
+
+        Integer priority = event.getPriority();
+        String phone = event.getRecipientPhone();
+        String email = event.getRecipientEmail();
+        java.util.Map<String, String> data = event.getTemplateData();
+
+        if (data == null) data = java.util.Collections.emptyMap();
+
+        // priority: 1 = WhatsApp preferred, 2 = Email preferred. If null, try WhatsApp then Email.
+        if (priority != null && priority == 2) {
+            // Email preferred
+            if (email != null && !email.isBlank()) {
+                try {
+                    emailService.sendPaymentConfirmation(email, data);
+                } catch (Exception e) {
+                    log.error("Failed to send payment confirmation email to {}: {}", email, e.getMessage());
+                }
+            } else {
+                log.warn("No recipient email available for payment event {}", event.getEventId());
+            }
+
+            if (phone != null && !phone.isBlank()) {
+                try {
+                    whatsAppService.sendPaymentConfirmation(phone, data);
+                } catch (Exception e) {
+                    log.error("Failed to send payment confirmation WhatsApp to {}: {}", phone, e.getMessage());
+                }
             }
         } else {
-            emailService.sendPaymentConfirmation(
-                    event.getRecipientEmail(),
-                    event.getTemplateData()
-            );
+            // WhatsApp preferred (priority == 1 or null)
+            if (phone != null && !phone.isBlank()) {
+                try {
+                    whatsAppService.sendPaymentConfirmation(phone, data);
+                } catch (Exception e) {
+                    log.error("Failed to send payment confirmation WhatsApp to {}: {}", phone, e.getMessage());
+                }
+            } else {
+                log.warn("No recipient phone available for payment event {}", event.getEventId());
+            }
+
+            if (email != null && !email.isBlank()) {
+                try {
+                    emailService.sendPaymentConfirmation(email, data);
+                } catch (Exception e) {
+                    log.error("Failed to send payment confirmation email to {}: {}", email, e.getMessage());
+                }
+            }
         }
     }
+
 }

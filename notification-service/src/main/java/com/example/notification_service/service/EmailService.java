@@ -52,9 +52,7 @@ public class EmailService {
             helper.setText(html, true);
 
             mailSender.send(message);
-            log.info("Email sent to: {}", to);
         } catch (MessagingException e) {
-            log.error("Email failed: {}", e.getMessage());
             throw new RuntimeException("Email failed", e);
         }
     }
