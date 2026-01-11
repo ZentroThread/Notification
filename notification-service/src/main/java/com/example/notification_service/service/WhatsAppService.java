@@ -62,16 +62,25 @@ public class WhatsAppService {
         }
 
         try {
-            if (!toPhone.startsWith("+")) {
-                toPhone = "+94" + toPhone;
+            String normalized = toPhone == null ? "" : toPhone.trim();
+
+            // Normalize local Sri Lankan numbers starting with 0 (e.g., 077xxxxxxx -> +9477xxxxxxx)
+            if (normalized.startsWith("0")) {
+                normalized = "+94" + normalized.substring(1);
+            } else if (!normalized.startsWith("+")) {
+                // If number provided without + but with country code (e.g., 9477...), add +
+                normalized = "+" + normalized;
             }
 
+            log.info("Sending WhatsApp to: whatsapp:{}", normalized);
+
             Message.creator(
-                    new PhoneNumber("whatsapp:" + toPhone),
+                    new PhoneNumber("whatsapp:" + normalized),
                     new PhoneNumber(fromNumber),
                     text
             ).create();
         } catch (Exception e) {
+            log.error("WhatsApp send failed for {}: {}", toPhone, e.getMessage());
             throw new RuntimeException("WhatsApp failed", e);
         }
     }
