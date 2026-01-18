@@ -48,33 +48,104 @@ public class WhatsAppService {
     }
 
     public void sendWelcome(String toPhone, String name) {
-        String msg = String.format(
-                "Welcome to Hiru Sandu, %s! 🎉\n\n" +
-                        "Thank you for choosing us for your special day.",
-                name
-        );
-        sendMessage(toPhone, msg);
+        StringBuilder sb = new StringBuilder();
+
+        // Header
+
+        sb.append("    ✨ *WELCOME* ✨\n");
+
+        sb.append("*HIRU SANDU BRIDAL WEARE*\n");
+        sb.append("━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+
+        // Personalized greeting
+        sb.append("Dear *").append(name).append("*, 👋\n\n");
+
+        sb.append("Welcome to Hiru Sandu Bridal Weare! We are honored that you have chosen us to be part of your special celebration. 💍\n\n");
+
+        sb.append("━━━━━━━━━━━━━━━━━━━━━━━━\n");
+        sb.append("🌟 *OUR COMMITMENT TO YOU*\n");
+        sb.append("━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+
+        sb.append("✓ Premium Quality Bridal Wear\n");
+        sb.append("✓ Personalized Customer Service\n");
+        sb.append("✓ Timely Delivery & Support\n");
+        sb.append("✓ Making Your Day Memorable\n\n");
+
+        sb.append("━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+
+        sb.append("💬 *Need Assistance?*\n");
+        sb.append("Our team is here to help you with any questions or special requests.\n\n");
+
+        sb.append("Thank you for trusting us with your special moments! 🎉\n\n");
+
+        sb.append("_Warm Regards,_\n");
+        sb.append("_Hiru Sandu Bridal Weare Team_ 💐\n");
+
+        sendMessage(toPhone, sb.toString());
     }
 
     public void sendPaymentConfirmation(String toPhone, Map<String, String> data) {
         try {
             if (data == null) data = java.util.Collections.emptyMap();
-            String orderId = data.getOrDefault("orderId", data.getOrDefault("billingCode", "-"));
-            String amount = data.getOrDefault("amount", "-");
-            String paymentMethod = data.getOrDefault("paymentMethod", "-");
+
+            // Extract billing details
+            String billNumber = data.getOrDefault("billNumber", data.getOrDefault("orderId", data.getOrDefault("billingCode", "-")));
+            String paymentMethod = data.getOrDefault("paymentMethod", "Cash");
             String items = data.getOrDefault("items", "");
+            String subtotal = data.getOrDefault("subtotal", data.getOrDefault("amount", "0.00"));
+            String discount = data.getOrDefault("discount", "0");
+            String discountPercent = data.getOrDefault("discountPercent", "0");
+            String netAmount = data.getOrDefault("netAmount", data.getOrDefault("amount", "0.00"));
+            String customerName = data.getOrDefault("customerName", "Valued Customer");
 
             StringBuilder sb = new StringBuilder();
-            sb.append("Payment Confirmed! ✅\n\n");
-            sb.append("Order ID: ").append(orderId).append("\n");
-            if (paymentMethod != null && !paymentMethod.isBlank()) {
-                sb.append("Payment Method: ").append(paymentMethod).append("\n");
-            }
+
+            // Header
+
+            sb.append("    💳 *PAYMENT RECEIPT* 💳\n");
+
+            sb.append("*HIRU SANDU BRIDAL WEARE*\n");
+            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+
+            // Bill Information
+            sb.append("📋 *Bill No:* ").append(billNumber).append("\n");
+            sb.append("👤 *Customer:* ").append(customerName).append("\n");
+            sb.append("💰 *Payment Method:* ").append(paymentMethod).append("\n");
+            sb.append("📅 *Date:* ").append(data.getOrDefault("date", java.time.LocalDate.now().toString())).append("\n\n");
+
+            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━\n");
+            sb.append("📦 *ITEMS ORDERED*\n");
+            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+
+            // Items Table
             if (items != null && !items.isBlank()) {
-                sb.append("Items: ").append("\n").append(items).append("\n");
+                sb.append(items).append("\n");
+            } else {
+                sb.append("No items listed\n\n");
             }
-            sb.append("Net Payment: Rs. ").append(amount).append("\n");
-            sb.append("\nThank you!");
+
+            // Billing Summary
+            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━\n");
+            sb.append("💵 *BILLING SUMMARY*\n");
+            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+
+            sb.append("Subtotal:        Rs. ").append(String.format("%10s", subtotal)).append("\n");
+
+            if (!discount.equals("0") && !discount.isEmpty()) {
+                sb.append("Discount (").append(discountPercent).append("%):   Rs. ").append(String.format("%10s", discount)).append("\n");
+                sb.append("                 ").append("─────────────\n");
+            }
+
+            sb.append("*NET AMOUNT:     Rs. ").append(String.format("%10s", netAmount)).append("*\n\n");
+
+            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+
+            // Footer
+            sb.append("✅ *Payment Confirmed Successfully!*\n\n");
+            sb.append("Thank you for choosing us for your special day! 🎉\n\n");
+            sb.append("For any queries, feel free to contact us.\n\n");
+            sb.append("_Best Regards,_\n");
+            sb.append("_Hiru Sandu Bridal Weare Team_ 💐\n");
 
             log.info("WhatsApp payment payload for {} -> {}", toPhone, data);
 
