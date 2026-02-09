@@ -19,9 +19,9 @@ public class EmailService {
 
     public void sendWelcome(String toEmail, String name) {
         String subject = "Welcome to Hiru Sandu Bridal Wears — Next steps to get started";
-        String profileUrl = "#"; // TODO: replace with real profile URL
-        String catalogUrl = "#"; // TODO: replace with real catalog URL
-        String bookingUrl = "#"; // TODO: replace with real booking URL
+        String profileUrl = "https://hirusandu.com/"; // TODO: replace with real profile URL
+        String catalogUrl = "https://hirusandu.com/#featured-products"; // TODO: replace with real catalog URL
+        String bookingUrl = "https://hirusandu.com//contact.php"; // TODO: replace with real booking URL
 
         String htmlBody = String.format("""
                 <!DOCTYPE html>
